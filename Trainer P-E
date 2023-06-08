@@ -1,0 +1,71 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn import datasets
+import matplotlib.pyplot as plt
+import xlrd as xlrd
+from datetime import datetime
+import pyodbc
+from LinearRegression import LinearRegression
+
+
+db_driver = '{Microsoft Access Driver (*.mdb, *.accdb)}'
+db_path = 'H:\Risk\Portfolio Risk Team\Python_scripts\RISK_DATABASE\RISK_DATA.accdb'
+conn_str = (rf'DRIVER={db_driver};'
+            rf'DBQ={db_path};')
+
+conn = pyodbc.connect(conn_str)
+
+df = pd.read_sql(sql="select * from PE", con=conn)
+
+df['Date'] = pd.to_datetime(df['Date'], format='%y%m%d')
+df.set_index('Date', inplace=True, drop=True)
+df = df.dropna()
+
+
+data = df 
+
+#print (data)
+
+#log_returns = np.log(data/data.shift(1))
+
+
+#print (df)
+
+df.to_excel('output.xlsx')
+
+a = ['Chrysalis']
+b = ['Average discount']
+
+
+X = data[a].to_numpy().reshape(-1, 1)
+#print(X)
+y = data[b].to_numpy().reshape(-1, 1)
+print(y)
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1234)
+
+fig = plt.figure(figsize=(4,3))
+#plt.scatter(X[:, 0], y, color = "b", marker = "o", s = 30)
+#plt.show()
+
+reg = LinearRegression(lr=0.01)
+reg.fit(X_train,y_train)
+predictions = reg.predict(X_test)
+
+def mse(y_test, predictions):
+    return np.mean((y_test-predictions)**2)
+
+mse = mse(y_test, predictions)
+print(mse)
+
+y_pred_line = reg.predict(X)
+cmap = plt.get_cmap('viridis')
+fig = plt.figure(figsize=(8,6))
+m1 = plt.scatter(X_train, y_train, color=cmap(0.9), s=10)
+m2 = plt.scatter(X_test, y_test, color=cmap(0.5), s=10)
+plt.plot(X, y_pred_line, color='black', linewidth=2, label='Prediction')
+plt.show()
+
+conn.close()
